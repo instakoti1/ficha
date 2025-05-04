@@ -45,6 +45,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="theme-color" content="#f5f5f5"/>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
   <title>Clauss Fitness • Treino Semanal</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet"/>
   <style>
@@ -162,12 +165,18 @@
       cursor: pointer;
       transition: background 0.3s ease-in-out;
       pointer-events: auto; /* Garante que o botão de tema capture cliques */
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      padding: 0;
+      border: none;
+      outline: none;
     }
 
     .tgl + .tgl-btn:before {
       content: '';
       position: absolute;
-      left: 1px;
+      left: 2px;
       top: 50%;
       transform: translateY(-50%);
       width: 20px;
@@ -183,7 +192,17 @@
     }
 
     .tgl:checked + .tgl-btn:before {
-      transform: translate(19px, -50%);
+      transform: translate(18px, -50%);
+    }
+
+    @media (hover: none) {
+      .tgl + .tgl-btn {
+        min-height: 24px; /* Garantir área de toque mínima */
+      }
+      
+      .theme-switch {
+        padding: 8px 4px; /* Aumentar área de toque */
+      }
     }
 
     .login h1 {
@@ -990,7 +1009,7 @@
       }
 
       loginForm.addEventListener('submit', (event) => {
-        event.preventDefault(); // Impede o recarregamento da página
+        event.preventDefault();
         console.log('Formulário de login submetido');
         
         const passwordInput = loginForm.querySelector('input[name="p"]');
@@ -1005,6 +1024,25 @@
           indexPage.classList.remove('active');
           mainApp.classList.remove('hidden');
           mainApp.classList.add('visible');
+
+          // Reset do estado inicial após login
+          const tasksArea = document.querySelector('.tasks');
+          const dayButtons = document.querySelectorAll('.day-btn');
+          
+          // Esconde todas as listas de tarefas
+          if (tasksArea) {
+            tasksArea.classList.remove('visible');
+          }
+          
+          // Remove a classe active de todos os botões
+          dayButtons.forEach(btn => {
+            btn.classList.remove('active');
+          });
+
+          // Limpa o dia atual
+          currentDay = '';
+          save();
+          render();
         } else {
           console.log('Senha incorreta');
           alert('Senha incorreta! Tente novamente.');
@@ -1350,12 +1388,6 @@
         insightsBlock.style.flexShrink = '0';
       }
       
-      const greetingBlock = document.querySelector('.greeting');
-      if (greetingBlock) {
-        greetingBlock.style.width = '75%';
-        greetingBlock.style.flexShrink = '0';
-      }
-      
       document.body.setAttribute('data-treino', currentDay);
       
       renderNav();
@@ -1382,24 +1414,11 @@
         tasksArea.style.webkitOverflowScrolling = 'touch';
         tasksArea.style.display = 'block';
         tasksArea.style.zIndex = '10';
-        
-        const taskElements = tasksArea.querySelectorAll('.task');
-        if (taskElements.length > 0) {
-          taskElements.forEach(task => {
-            task.style.display = 'flex';
-            task.style.visibility = 'visible';
-          });
-        } else {
-          console.log('Nenhuma tarefa renderizada. Verificando dados:', data[currentDay]);
+
+        // Garante que a lista esteja escondida se não houver dia selecionado
+        if (!currentDay) {
+          tasksArea.classList.remove('visible');
         }
-        
-        tasksArea.addEventListener('scroll', () => {
-          if (tasksArea.scrollTop > 0) {
-            container.classList.add('scrolled');
-          } else {
-            container.classList.remove('scrolled');
-          }
-        });
       }
     }
 
@@ -1538,36 +1557,68 @@
           window.confetti(confettiSettings);
         }
       } else if (v >= 350 && v < max) {
-        container.classList.add('almost-max');
+        recipiente.lista de classes.adicionar('quase-máx');
       }
     }
 
-    function toggleTasksList() {
-      const tasksArea = document.querySelector('.tasks');
-      if (tasksArea) {
-        tasksArea.classList.toggle('visible');
+    função lista de tarefas alternadas() {
+      const tarefasÁrea = documento.consultaSelector('.tarefas');
+      se (tarefasÁrea) {
+        tarefasÁrea.lista de classes.alternar('visível');
       }
     }
 
-    const insightsContainer = document.querySelector('.insights');
-    if (insightsContainer) {
-      insightsContainer.style.cursor = 'pointer';
-      insightsContainer.addEventListener('click', toggleTasksList);
+    const insightsContainer = documento.consultaSelector('.insights');
+    se (insightsContainer) {
+      insightsContainer.estilo.cursor = 'ponteiro';
+      insightsContainer.addEventListener('clique', lista de tarefas alternadas);
     }
 
-    const themeToggleExercise = document.getElementById('theme-toggle-exercise');
-    if (themeToggleExercise) {
-      themeToggleExercise.onchange = () => {
-        isDark = themeToggleExercise.checked;
-        document.body.classList.toggle('dark-mode', isDark);
-        save();
+    const temaToggleExercício = documento.getElementById('exercício de alternância de tema');
+    se (temaToggleExercício) {
+      temaToggleExercício.onchange = () => {
+        é escuro = temaToggleExercício.verificado;
+        documento.corpo.lista de classes.alternar('modo escuro', é escuro);
+        salvar();
       };
     }
-  </script>
+
+    // Adicione este código após uma definição dos elementos alternar
+
+    função configurarTemaToggle(alternar) {
+      se (!alternar) retorno;
+
+      // Remover manipuladores existentes
+      alternar.removerEventListener('mudar', alternar tema);
+      alternar.removerEventListener('toqueiniciar', handleTouch);
+
+      // Função principal para alternar tema
+      função alternar tema() {
+        é escuro = alternar.verificado;
+        documento.corpo.lista de classes.alternar('modo escuro', é escuro);
+        salvar();
+      }
+
+      // Manipulador de toque específico para celular
+      função handleTouch(e) {
+        e.prevenir padrão();
+        alternar.verificado = !alternar.verificado;
+        alternar tema();
+      }
+
+      // Adicionar os eventos
+      alternar.addEventListener('mudar', alternar tema);
+      alternar.addEventListener('toqueiniciar', handleTouch, {passivo: falso});
+    }
+
+    // Configurar ambos os alternadores
+    configurarTemaToggle(documento.getElementById('alternação de tema'));
+    configurarTemaToggle(documento.getElementById('exercício de alternância de tema'));
+  </roteiro>
 
   <!-- Script do Cloudflare -->
-  <script>
-    (function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93a3d13baaba1d72',t:'MTc0NjMxNzg2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();
-  </script>
-</body>
-</html>
+  <roteiro>
+    (função(){função c(){var b=a.conteúdoDocumento||a.janela de conteúdo.documento;se(b){var d=b.criarElemento('roteiro');d.innerHTML="janela.__CF$cv$params={r:'93a3d13baaba1d72',t:'MTc0NjMxNzg2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();
+  </roteiro>
+</corpo>
+          </html>
