@@ -1,0 +1,1573 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="theme-color" content="#f5f5f5"/>
+  <title>Clauss Fitness • Treino Semanal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    /* Conteúdo de login.css */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Mulish:wght@200;300;400;500;600;700;900&family=Public+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+    :root {
+      --bg: #b2b2b2;
+      --container-bg: #faf7f7;
+      --card-bg: #ffffff;
+      --text: #333333;
+      --muted: #999999;
+      --accent: #FF0000;
+      --input-bg: #fff;
+      --input-border: #ccc;
+      --shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes a-text-scroll {
+      0% { transform: translate3d(-100%, 0, 0); }
+      100% { transform: translate3d(0%, 0, 0); }
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      color: #f5f5f5;
+      font-family: 'Public Sans', sans-serif;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, #171717, #7e1b18);
+      background-size: 100% 100%;
+      animation: gradientAnimation 15s infinite;
+      z-index: 1;
+    }
+
+    .background-text {
+      position: absolute;
+      top: 1%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: top;
+      justify-content: center;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .background-text h2 {
+      white-space: nowrap;
+      font-size: 8em;
+      font-weight: 800;
+      opacity: 0.1;
+      letter-spacing: 0em;
+      animation: a-text-scroll 11s linear infinite;
+    }
+
+    .login {
+      position: absolute;
+      top: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: 100%;
+      max-width: 200px;
+      padding: 18px 14px 14px 14px;
+      background: var(--container-bg);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    .theme-switch {
+      align-self: flex-end;
+      margin-bottom: 1px;
+    }
+
+    .tgl {
+      display: none;
+    }
+
+    .tgl + .tgl-btn {
+      width: 42px;
+      height: 24px;
+      background: #ff6347;
+      border-radius: 24px;
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+      pointer-events: auto; /* Garante que o botão de tema capture cliques */
+    }
+
+    .tgl + .tgl-btn:before {
+      content: '';
+      position: absolute;
+      left: 1px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s ease-in-out;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .tgl:checked + .tgl-btn {
+      background: #32c671;
+    }
+
+    .tgl:checked + .tgl-btn:before {
+      transform: translate(19px, -50%);
+    }
+
+    .login h1 {
+      color: var(--accent);
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 2rem;
+      margin-bottom: 24px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    input {
+      width: 80%;
+      display: block;
+      margin: 0 auto 16px auto;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      outline: none;
+      padding: 10px;
+      font-size: 0.9rem;
+      color: var(--text);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.05);
+      transition: box-shadow .3s, border-color .3s;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 4px 16px rgba(255,0,0,0.10);
+    }
+
+    .btn {
+      width: 42px;
+      height: 24px;
+      padding: 0;
+      font-size: 0.75rem;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      color: #fff;
+      background: #ff6347;
+      border: none;
+      border-radius: 24px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.08);
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn:hover {
+      background: #32c671;
+    }
+
+    body.dark-mode {
+      --bg: rgba(0, 0, 0, 0.184);
+      --container-bg: #232323;
+      --card-bg: #1b1b1b;
+      --text: #f5f5f5;
+      --muted: #8b8b8b;
+      --accent: #FF5252;
+      --input-bg: #181818;
+      --input-border: #918f8f;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+      background: linear-gradient(to bottom, var(--bg) 0%, color-mix(in srgb, var(--bg) 90%, black) 100%);
+    }
+
+    body.dark-mode .login {
+      background: var(--container-bg);
+      box-shadow: var(--shadow);
+    }
+
+    body.dark-mode input {
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--input-border);
+    }
+
+    body.dark-mode .btn {
+      background: var(--accent);
+    }
+
+    body.dark-mode .btn:hover {
+      background: #c20000;
+    }
+
+    .card {
+      position: relative;
+      width: 315px;
+      border-radius: 1em;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      color: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(45deg, #171717, #7e1b18);
+      background-size: 200% 200%;
+      animation: gradientAnimation 15s infinite;
+    }
+
+    .card-header {
+      margin: 0px 0;
+      padding: 20px 20px 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-lable-container {
+      height: 230px;
+      border: 0px solid black;
+      margin: 30px 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-lable-container h2 {
+      white-space: nowrap;
+      pointer-events: none;
+      font-size: 14em;
+      font-weight: 800;
+      flex-shrink: 0;
+      padding: 0 20px;
+      opacity: 0.35;
+      width: max-content;
+      display: flex;
+      align-items: center;
+      transition: opacity 1000ms ease-in-out;
+      transform: translateX(0);
+      animation: a-text-scroll 35s linear infinite;
+    }
+
+    .card:hover .card-lable-container h2 {
+      opacity: 0.75;
+    }
+
+    .card:hover .shoe-image {
+      transform: translate(-5%, -9%) rotate(15deg) scale(1.025);
+    }
+
+    .nike-logo-container {
+      position: absolute;
+      top: 2%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+    }
+
+    .nike-logo {
+      width: 40px;
+      user-select: none;
+    }
+
+    /* Estilos inline de index.html (primeiro conjunto) */
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;800&display=swap");
+
+    :root {
+      --bg: #e5e5e541;
+      --container-bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --text: #333333;
+      --muted: #999999;
+      --accent: #FF0000;
+      --check: #32C671;
+      --clr-1: #00c2ff;
+      --clr-2: #33ff8c;
+      --clr-3: #ffc640;
+      --clr-4: #e54cff;
+      --blur: 1rem;
+      --header-height: 0px;
+      --progress-level-1: #4f46e5;
+      --progress-level-2: #10b981;
+      --progress-level-3: #8b5cf6;
+      --progress-level-4: #ffd700;
+    }
+
+    .dark-mode {
+      --bg: #0a0a0a;
+      --container-bg: #121212;
+      --card-bg: #181818;
+      --text: #f0f0f0;
+      --muted: #666666;
+      --accent: rgb(255, 99, 71);
+    }
+
+    body {
+      background: linear-gradient(45deg, #171717, #7e1b18);
+      background-size: 200% 200%;
+      animation: gradientAnimation 15s infinite;
+      color: #757575;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      height: auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .header-container, .task, .insights, .day-btn {
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto !important;
+    }
+
+    .header-container {
+      position: fixed !important;
+      top: 0 !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: 100%;
+      max-width: 400px;
+      padding: 8px 16px 8px 16px !important;
+      margin: 0 auto;
+      z-index: 2000 !important;
+      background: var(--container-bg) !important;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+      height: auto;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      overflow: visible !important;
+      transition: filter 0.3s, opacity 0.3s ease, visibility 0.3s ease;
+      pointer-events: none; /* Desativa cliques no container */
+    }
+
+    .header-container.scrolled {
+      filter: drop-shadow(0 6px 15px rgba(0, 0, 0, 0.2));
+    }
+
+    .tasks {
+      position: absolute;
+      top: var(--header-height);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 400px;
+      height: calc(100vh - var(--header-height));
+      padding: 0 16px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 10;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+      transform-origin: top center;
+    }
+
+    .tasks.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .tasks-wrapper {
+      width: 100%;
+      position: relative;
+      padding: 12px 0;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+
+    .container::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 16px;
+      pointer-events: none;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      z-index: 2;
+    }
+
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0;
+      padding-top: 0;
+      overflow: visible; /* Garante que os filhos não sejam cortados */
+      pointer-events: none; /* Desativa cliques no header */
+    }
+
+    .date {
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      margin: 0;
+      pointer-events: none; /* Não interativo */
+      color: var(--text); /* Data */
+    }
+
+    .insights {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      height: auto;
+      min-height: 88px;
+      flex-shrink: 0;
+      flex-grow: 0;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      pointer-events: auto; /* Permite interação */
+    }
+
+    .insights:hover {
+      transform: scale(0.98);
+    }
+
+    nav {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin-bottom: 8px;
+      padding: 0 2px;
+      margin-top: 4px; /* Ajuste para separar do controls */
+      z-index: 2100; /* Acima do header-container */
+      pointer-events: auto; /* Permite interação */
+    }
+
+    .day-btn {
+      text-align: center;
+      padding: 6px 4px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.05);
+      transition: all .3s ease;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+      min-width: 0;
+      flex-shrink: 1;
+      pointer-events: auto; /* Garante que os botões capturem cliques */
+      color: #a0a0a0
+    }
+
+    .day-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .day-btn.done {
+      border: 2px solid var(--accent);
+    }
+
+    .day-btn:hover {
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .task {
+      width: 100%;
+      background: var(--card-bg);
+      border-radius: 12px;
+      display: flex;
+      align-items: flex-start;
+      padding: 16px 16px 16px 40px;
+      margin: 12px 0;
+      cursor: pointer;
+      position: relative;
+      color: var(--text); /* Nomes dos exercícios */
+      box-shadow: var(--shadow);
+      transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                  opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);         
+    }
+
+    .task.cardio-task {
+      margin-top: 24px !important;
+      margin-bottom: 24px !important;
+      border-left: 4px solid var(--accent);
+      border-right: 4px solid var(--accent);
+    }
+
+    .task:first-child {
+      margin-top: 0;
+    }
+
+    .task:last-child {
+      margin-bottom: 0;
+    }
+
+    .task::before {
+      content: "✓";
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--check);
+      font-size: 16px;
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+
+    .task.done {
+      color: var(--muted);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,.1);
+      background: var(--bg);
+    }
+
+    .task.done::before {
+      opacity: 1;
+    }
+
+    .task.done .details {
+      opacity: 0.5;
+    }
+
+    .task.slide-left {
+      transform: translateX(-100px) scale(0.9);
+      opacity: 0;
+      z-index: 1;
+    }
+
+    @keyframes clean-task {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(-100%); opacity: 0; }
+    }
+
+    .task.cleaning {
+      animation: clean-task 0.3s ease forwards;
+    }
+
+    .greeting {
+      display: flex;
+      flex-direction: column;
+      width: 75%;
+      flex-shrink: 0;
+    }
+
+    .greeting-title-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .greeting-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      flex-shrink: 0;
+      color: var(--text); /* "Oi" */
+    }
+
+    .greeting-subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .aurora-word {
+      position: relative;
+      display: inline-block;
+      font-size: 1.2rem;
+      font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.2;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    .circular-progress {
+      --size: 48px;
+      --stroke-width: 8;
+      --primary: #4f46e5;
+      --secondary: #e5e7eb;
+      width: var(--size);
+      height: var(--size);
+      position: relative;
+      flex-shrink: 0;
+      margin-left: auto;
+      pointer-events: none; /* Não interativo */
+    }
+
+    .circular-progress svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .circular-progress circle {
+      fill: none;
+      stroke-width: var(--stroke-width);
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.8s ease, stroke 0.8s ease;
+    }
+
+    .circular-progress .bg {
+      stroke: var(--secondary);
+    }
+
+    .circular-progress .progress {
+      stroke: var(--primary);
+      stroke-dasharray: 0 283;
+    }
+
+    .circular-progress .value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(var(--size) / 7);
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .days-container {
+      display: grid !important;
+      grid-template-columns: repeat(5, 1fr) !important;
+      gap: 8px !important;
+      width: 100% !important;
+    }
+
+    .days-container .day-button {
+      margin: 0 !important;
+    }
+
+    .info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .name {
+      flex: 1;
+      margin-bottom: 4px;
+    }
+
+    .details {
+      font-size: .75rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .controls {
+      display: flex;
+      gap: 20px; /* Separar os elementos */
+      align-items: center;
+      width: auto; /* Impede expansão desnecessária */
+      max-height: 24px; /* Limita a altura */
+      z-index: 2050; /* Menor que o nav */
+      pointer-events: none; /* Desativa cliques no container */
+    }
+
+    .controls > * {
+      pointer-events: auto; /* Ativa cliques apenas nos filhos */
+    }
+
+    .tgl+.tgl-btn {
+      width: 42px;
+      height: 24px;
+      border-radius: 24px;
+      background: #4e4e4e;
+      border: 1px solid #3c3c3c;
+      padding: 2px;
+      cursor: pointer;
+      transition: .4s;
+    }
+
+    .tgl+.tgl-btn:after {
+      content: "";
+      display: block;
+      width: 50%;
+      height: 100%;
+      background: #fff;
+      border-radius: 24px;
+      left: 0;
+      position: relative;
+      transition: left .3s cubic-bezier(.175,.885,.32,1.275);
+    }
+
+    .tgl:checked+.tgl-btn {
+      background: #ff6347;
+      border-color: #ff6347;
+    }
+
+    .tgl:checked+.tgl-btn:after {
+      left: 50%;
+    }
+
+    .button {
+      --b: #275EFE;
+      --b-h: #1D4FE1;
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      padding: 0; /* Remove padding */
+      border: 0;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--b);
+      color: #fff;
+      cursor: pointer;
+      position: relative;
+      margin: auto 0;
+      width: 36px; /* Tamanho fixo */
+      height: 24px; /* Tamanho fixo */
+      overflow: hidden; /* Limita a área */
+      contain: strict; /* Restringe pintura e layout */
+      pointer-events: auto; /* Garante que apenas o botão capture cliques */
+    }
+
+    .button:hover {
+      background: var(--b-h);
+    }
+
+    .button:active {
+      transform: scale(.7);
+    }
+
+    .button .icon {
+      width: 0px;
+      height: 0px;
+      position: relative;
+    }
+
+    #content-spacer {
+      display: none !important;
+    }
+
+    body[data-treino="Segunda"] .tasks,
+    body[data-treino="Terça"] .tasks,
+    body[data-treino="Quarta"] .tasks,
+    body[data-treino="Quinta"] .tasks,
+    body[data-treino="Sexta"] .tasks {
+      margin-bottom: 0;
+      padding-bottom: 80px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    body[data-treino="Segunda"] .tasks::-webkit-scrollbar,
+    body[data-treino="Terça"] .tasks::-webkit-scrollbar,
+    body[data-treino="Quarta"] .tasks::-webkit-scrollbar,
+    body[data-treino="Quinta"] .tasks::-webkit-scrollbar,
+    body[data-treino="Sexta"] .tasks::-webkit-scrollbar {
+      display: none;
+    }
+
+    @media screen and (max-width: 400px) {
+      .header-container {
+        padding: 8px 12px !important;
+      }
+      
+      .task {
+        padding: 10px 12px 10px 36px;
+      }
+    }
+
+    @media screen and (max-width: 480px) {
+      .tasks {
+        width: 100% !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+        overflow-x: hidden;
+      }
+    }
+
+    body:not(.dark-mode) .insights {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      transition: box-shadow 0.3s ease;
+    }
+
+    body:not(.dark-mode) .day-btn {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+      transition: box-shadow 0.3s ease;
+    }
+
+    body:not(.dark-mode) .day-btn:hover {
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .screen.hidden { display: none !important; }
+    .screen.visible { display: block !important; }
+
+    /* Estilos inline de index.html (segundo conjunto) */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    .page {
+      display: none;
+      padding: 20px;
+    }
+
+    .page.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Tela de Login -->
+  <section id="indexPage" class="page active">
+    <div class="background-text">
+      <h2>INSTAKOTI</h2>
+      <h2>INSTAKOTI</h2>
+    </div>
+    <div class="nike-logo-container">
+      <img class="nike-logo" src="https://www.edigitalagency.com.au/wp-content/uploads/Nike-logo-png-white.png" alt="Nike Logo">
+    </div>
+    <div class="login">
+      <div class="theme-switch">
+        <input type="checkbox" id="theme-toggle" class="tgl">
+        <label for="theme-toggle" class="tgl-btn"></label>
+      </div>
+      <form id="loginForm" style="display: flex; flex-direction: column; align-items: center;">
+        <input type="password" name="p" placeholder="Password" required="required" style="margin-bottom: 16px; width: 50%;">
+        <button type="submit" class="btn btn-primary btn-block btn-large" style="width: 50%;">Let me in.</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Tela de Treino -->
+  <section id="main-app" class="screen hidden">
+    <div class="header-container">
+      <header>
+        <div class="date" id="current-date"></div>
+        <div class="controls">
+          <button id="reset-btn" class="button">
+            <div class="icon"><svg class="top"><use href="#top"/></svg><svg class="bottom"><use href="#bottom"/></svg></div>
+            <div class="text">Limpar</div>
+          </button>
+          <div class="theme-switch">
+            <input type="checkbox" id="theme-toggle-exercise" class="tgl">
+            <label for="theme-toggle-exercise" class="tgl-btn"></label>
+          </div>
+        </div>
+      </header>
+
+      <section class="insights">
+        <div class="greeting">
+          <div class="greeting-title-row">
+            <span class="greeting-title">Oi,</span>
+            <span class="aurora-word">Claudius</span>
+          </div>
+          <div class="greeting-subtitle">Bom treino!</div>
+        </div>
+        <div id="progress" class="circular-progress" data-level="1" 
+             style="--primary:#4f46e5; --secondary:var(--muted);">
+          <svg viewBox="0 0 100 100">
+            <circle class="bg" cx="50" cy="50" r="45"></circle>
+            <circle class="progress" cx="50" cy="50" r="45"></circle>
+          </svg>
+          <span class="value">0xp</span>
+        </div>
+      </section>
+
+      <nav id="nav-days"></nav>
+    </div>
+
+    <section class="tasks" id="task-list"></section>
+  </section>
+
+  <!-- Dependências externas -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+  <!-- Script de validação do login -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginForm = document.getElementById('loginForm');
+      const indexPage = document.getElementById('indexPage');
+      const mainApp = document.getElementById('main-app');
+      const correctPassword = '123';
+
+      if (!loginForm || !indexPage || !mainApp) {
+        console.error('Elementos não encontrados:', { loginForm, indexPage, mainApp });
+        return;
+      }
+
+      loginForm.addEventListener('submit', (event) => {
+        event.preventDefault(); // Impede o recarregamento da página
+        console.log('Formulário de login submetido');
+        
+        const passwordInput = loginForm.querySelector('input[name="p"]');
+        if (!passwordInput) {
+          console.error('Campo de senha não encontrado');
+          return;
+        }
+
+        console.log('Senha inserida:', passwordInput.value);
+        if (passwordInput.value === correctPassword) {
+          console.log('Senha correta, alternando para a tela de treino');
+          indexPage.classList.remove('active');
+          mainApp.classList.remove('hidden');
+          mainApp.classList.add('visible');
+        } else {
+          console.log('Senha incorreta');
+          alert('Senha incorreta! Tente novamente.');
+        }
+      });
+
+      // Impedir propagação de eventos nos containers pais
+      const headerContainer = document.querySelector('.header-container');
+      const header = document.querySelector('header');
+      const controls = document.querySelector('.controls');
+
+      if (headerContainer) {
+        headerContainer.onclick = (e) => e.stopPropagation();
+        headerContainer.ontouchstart = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        };
+      }
+
+      if (header) {
+        header.onclick = (e) => e.stopPropagation();
+        header.ontouchstart = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        };
+      }
+
+      if (controls) {
+        controls.onclick = (e) => e.stopPropagation();
+        controls.ontouchstart = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        };
+      }
+    });
+  </script>
+
+  <!-- Script da página de treino -->
+  <script>
+    const safeGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch{return d}}
+    const safeSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+
+    const DAYS = [
+      { key: 'Segunda', label: 'SEGUNDA' },
+      { key: 'Terça',  label: 'TERÇA'  },
+      { key: 'Quarta', label: 'QUARTA' },
+      { key: 'Quinta', label: 'QUINTA' },
+      { key: 'Sexta',  label: 'SEXTA'  }
+    ];
+
+    const TASKS = {
+      'Segunda': [
+        { name:'Supino Reto Barra',            sets:4, reps:'8-10',      rest:'90s'    },
+        { name:'Supino Inclinado Halteres',     sets:3, reps:'10-12',     rest:'60s'    },
+        { name:'Crucifixo ou Crossover (drop)',  sets:3, reps:'12-15',     rest:'60s'    },
+        { name:'Paralelas ou Supino Fechado',    sets:3, reps:'10-12',     rest:'60-90s' },
+        { name:'Extensão Tríceps Polia',        sets:3, reps:'12-15',     rest:'60s'    },
+        { name:'Prancha (opcional)',            sets:3, reps:'30-45s',    rest:'30s'    }
+      ],
+      'Terça': [
+        { name:'Barra fixa ou Pulldown',        sets:4, reps:'6-10',      rest:'90s'  },
+        { name:'Remada Curvada Barra/Haltere',  sets:3, reps:'8-10',      rest:'90s'  },
+        { name:'Remada Baixa Polia',            sets:3, reps:'10-12',     rest:'60s'  },
+        { name:'Levant. Terra (opcional)',      sets:3, reps:'8',         rest:'120s' },
+        { name:'Rosca Direta Barra (drop)',     sets:3, reps:'10-12',     rest:'60s'  },
+        { name:'Rosca Martelo Halteres',        sets:3, reps:'12',        rest:'60s'  },
+        { name:'Rosca Concentrada/Scott',       sets:2, reps:'15',        rest:'45s'  }
+      ],
+      'Quarta': [
+        { name:'Agachamento Livre ou Leg Press', sets:4, reps:'8-10',     rest:'120s' },
+        { name:'Leg Press 45°',                  sets:3, reps:'10-12',    rest:'90s'  },
+        { name:'Cadeira Extensora (drop)',       sets:3, reps:'12-15',    rest:'60s'  },
+        { name:'Mesa Flexora',                   sets:3, reps:'10-12',    rest:'60s'  },
+        { name:'Stiff (Romeno)',                 sets:3, reps:'10',       rest:'90s'  },
+        { name:'Panturrilha em Pé',              sets:4, reps:'15',       rest:'60s'  },
+        { name:'Elevação Pernas Abdômen',        sets:3, reps:'15',       rest:'30s'  }
+      ],
+      'Quinta': [
+        { name:'Desenv. Militar Barra',          sets:4, reps:'8-10',     rest:'90s'  },
+        { name:'Elevação Lateral Halteres',      sets:3, reps:'12',       rest:'60s'  },
+        { name:'Elevação Frontal Halteres/Anilha', sets:2, reps:'12-15',  rest:'45s'  },
+        { name:'Posterior Ombro (Fly inverso)',  sets:3, reps:'12-15',    rest:'60s'  },
+        { name:'Encolhimento Trapézio Halteres', sets:3, reps:'12',       rest:'60s'  },
+        { name:'Superset Abs: Crunch+Elevação',   sets:3, reps:'15-20+15',rest:'30s'  },
+        { name:'Prancha Lateral',                sets:2, reps:'30s cada',rest:'30s'  }
+      ],
+      'Sexta': [
+        { name:'Burpee com Flexão (circuito)',    sets:4, reps:'10',        rest:'Sem pausa' },
+        { name:'Kettlebell/Dumbbell Swing',       sets:4, reps:'15',        rest:'Sem pausa' },
+        { name:'Remada Curvada Halteres',         sets:4, reps:'12',        rest:'Sem pausa' },
+        { name:'Afundos Alternados',              sets:4, reps:'10 cada perna', rest:'Sem pausa' },
+        { name:'Prancha Frontal (opcional)',      sets:4, reps:'30s',       rest:'1-2 min' }
+      ]
+    };
+
+    const CARDIOS = {
+      'Segunda': '🔥 HIIT na esteira (20 min pós-treino)',
+      'Terça'  : '🚴 Moderado contínuo (20 min pós-treino)',
+      'Quarta': '🚴 Moderado (leve, 20 min pós-treino)',
+      'Quinta': '🔥 HIIT bike/elíptico (20 min pós-treino)',
+      'Sexta'  : '✅ Incluído no circuito (não precisa adicional)'
+    };
+
+    let data=safeGet('workoutData',JSON.parse(JSON.stringify(TASKS)))
+    let currentDay=(data[localStorage.getItem('currentDay')]?localStorage.getItem('currentDay'):'Segunda')
+    let isDark=localStorage.getItem('theme')==='dark'
+
+    const navEl=document.getElementById('nav-days'),
+          listEl=document.getElementById('task-list'),
+          cardioEl=document.getElementById('cardio-desc'),
+          toggle=document.getElementById('theme-toggle'),
+          resetBtn=document.getElementById('reset-btn'),
+          container=document.querySelector('.header-container')
+
+    document.getElementById('current-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'short'})
+    if(isDark)document.body.classList.add('dark-mode');toggle.checked=isDark    
+    resetBtn.querySelector('.text').innerHTML='<span>'+[...resetBtn.querySelector('.text').textContent.trim()].join('</span><span>')+'</span>'
+
+    const save=()=>{
+      safeSet('workoutData',data);
+      localStorage.setItem('currentDay',currentDay);
+      localStorage.setItem('theme',isDark?'dark':'light');
+    }
+
+    let completedGroups = 0;
+    function initCompletedGroups() {
+      completedGroups = 0;
+      for (const day of DAYS) {
+        const tasks = data[day.key] || [];
+        if (tasks.length > 0 && tasks.every(t => t.done)) {
+          completedGroups++;
+        }
+      }
+    }
+    initCompletedGroups();
+
+    function calculateTotalProgress() {
+      let totalTasks = 0;
+      let totalCompleted = 0;
+      
+      for (const day of DAYS) {
+        const tasks = data[day.key] || [];
+        totalTasks += tasks.length;
+        totalCompleted += tasks.filter(t => t.done).length;
+      }
+      
+      return { totalTasks, totalCompleted };
+    }
+
+    function renderProgress() {
+      const progressEl = document.getElementById('progress');
+      
+      if (!progressEl) return;
+      
+      const { totalTasks, totalCompleted } = calculateTotalProgress();
+      
+      if (totalTasks === 0) {
+        setCircularProgress(progressEl, 0);
+        if (cardioEl) cardioEl.textContent = CARDIOS[currentDay] || '';
+        return;
+      }
+      
+      const valuePerTask = 400 / totalTasks;
+      const currentValue = totalCompleted * valuePerTask;
+      
+      setCircularProgress(progressEl, currentValue);
+      
+      if (cardioEl) cardioEl.textContent = CARDIOS[currentDay] || '';
+    }
+
+    function renderNav() {
+      if (!navEl) return;
+      
+      navEl.innerHTML = '';
+      
+      for (const d of DAYS) {
+        const tasks = data[d.key] || [];
+        const btn = document.createElement('div');
+        
+        btn.className = `day-btn${d.key === currentDay ? ' active' : ''}${tasks.every(t => t.done) ? ' done' : ''}`;
+        btn.textContent = d.label;
+        
+        btn.onclick = (e) => {
+          e.stopPropagation(); // Impede propagação do evento
+          console.log(`Botão de ${d.key} clicado`);
+          const tasksArea = document.querySelector('.tasks');
+          
+          if (d.key === currentDay) {
+            if (tasksArea) {
+              tasksArea.classList.toggle('visible');
+            }
+            return;
+          }
+          
+          currentDay = d.key;
+          save();
+          render();
+          
+          if (tasksArea && !tasksArea.classList.contains('visible')) {
+            tasksArea.classList.add('visible');
+          }
+        };
+        
+        btn.ontouchstart = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log(`Toque no botão de ${d.key}`);
+          btn.onclick(e);
+        };
+        
+        navEl.appendChild(btn);
+      }
+    }
+
+    function renderTasks() {
+      if (!listEl) {
+        console.error("Elemento de lista não encontrado");
+        return;
+      }
+      
+      listEl.innerHTML = '';
+      
+      const tasks = data[currentDay] || [];
+      console.log("Renderizando tarefas para:", currentDay, "Total:", tasks.length);
+      
+      if (tasks.length === 0) {
+        console.warn("Nenhuma tarefa encontrada para o dia atual:", currentDay);
+        const placeholder = document.createElement('div');
+        placeholder.style.height = '50px';
+        placeholder.textContent = "Nenhum exercício para hoje";
+        placeholder.style.textAlign = 'center';
+        placeholder.style.padding = '20px';
+        listEl.appendChild(placeholder);
+        return;
+      }
+      
+      const tasksWrapper = document.createElement('div');
+      tasksWrapper.className = 'tasks-wrapper';
+      tasksWrapper.style.width = '100%';
+      tasksWrapper.style.position = 'relative';
+      listEl.appendChild(tasksWrapper);
+      
+      const taskElements = [];
+      
+      tasks.forEach((t, index) => {
+        const task = document.createElement('div');
+        task.className = `task${t.done ? ' done' : ''}`;
+        task.setAttribute('data-index', index);
+        
+        task.onclick = function() {
+          const isDone = !t.done;
+          t.done = isDone;
+          
+          if (isDone) {
+            const thisTaskElement = this;
+            const thisIndex = parseInt(thisTaskElement.getAttribute('data-index'));
+            
+            thisTaskElement.classList.add('slide-left');
+            
+            let itemsBelow = [];
+            taskElements.forEach((el, idx) => {
+              if (idx > thisIndex && !el.classList.contains('done')) {
+                itemsBelow.push(el);
+                setTimeout(() => {
+                  el.style.animation = `smoothMoveUp 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards`;
+                }, 50 * (idx - thisIndex));
+              }
+            });
+            
+            setTimeout(() => {
+              itemsBelow.forEach(el => {
+                el.style.animation = '';
+                el.style.transform = '';
+              });
+              
+              const currentTasks = data[currentDay];
+              const taskToMove = currentTasks.splice(thisIndex, 1)[0];
+              currentTasks.push(taskToMove);
+              
+              save();
+              render();
+            }, 500);
+          } else {
+            const thisIndex = parseInt(this.getAttribute('data-index'));
+            const currentTasks = data[currentDay];
+            const taskToMove = currentTasks.splice(thisIndex, 1)[0];
+            currentTasks.unshift(taskToMove);
+            
+            save();
+            render();
+          }
+        };
+        
+        task.innerHTML = `
+          <div class="info">
+            <div class="name">${t.name}</div>
+            <div class="details">${t.sets}× · ${t.reps} · descanso ${t.rest}</div>
+          </div>
+        `;
+        
+        tasksWrapper.appendChild(task);
+        
+        taskElements.push(task);
+      });
+      
+      const cardioTask = document.createElement('div');
+      cardioTask.className = 'task cardio-task';
+      cardioTask.style.borderLeft = '4px solid var(--accent)';
+      cardioTask.style.borderRight = '4px solid var(--accent)';
+      cardioTask.style.marginTop = currentDay === 'Quarta' ? '40px' : '20px';
+      cardioTask.style.paddingLeft = '16px';
+      
+      cardioTask.innerHTML = `
+        <div class="info">
+          <div class="name" style="font-weight: 600;">Cardio</div>
+          <div class="cardio-desc" style="font-size: 0.9rem; color: var(--muted);">${CARDIOS[currentDay]}</div>
+        </div>
+      `;
+      
+      cardioTask.style.pointerEvents = 'none';
+      
+      tasksWrapper.appendChild(cardioTask);
+      
+      const spacer = document.createElement('div');
+      spacer.style.height = currentDay === 'Quarta' ? '30px' : '20px';
+      spacer.style.width = '100%';
+      spacer.style.clear = 'both';
+      listEl.appendChild(spacer);
+    }
+
+    function updateLayout() {
+      const headerContainer = document.querySelector('.header-container');
+      if (headerContainer) {
+        const height = headerContainer.getBoundingClientRect().height;
+        document.documentElement.style.setProperty('--header-height', `${height}px`);
+      }
+    }
+
+    function render() {
+      const insightsBlock = document.querySelector('.insights');
+      if (insightsBlock) {
+        insightsBlock.style.minHeight = '88px';
+        insightsBlock.style.flexShrink = '0';
+      }
+      
+      const greetingBlock = document.querySelector('.greeting');
+      if (greetingBlock) {
+        greetingBlock.style.width = '75%';
+        greetingBlock.style.flexShrink = '0';
+      }
+      
+      document.body.setAttribute('data-treino', currentDay);
+      
+      renderNav();
+      renderTasks();
+      renderProgress();
+      updateLayout();
+      
+      const container = document.querySelector('.header-container');
+      const tasksArea = document.querySelector('.tasks');
+      
+      if (container && tasksArea) {
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.zIndex = '1000';
+        
+        const containerHeight = container.offsetHeight || 220;
+        
+        tasksArea.style.top = containerHeight + 'px';
+        tasksArea.style.maxWidth = '400px';
+        tasksArea.style.left = '50%';
+        tasksArea.style.transform = 'translateX(-50%)';
+        tasksArea.style.overflowY = 'auto';
+        tasksArea.style.height = `calc(100vh - ${containerHeight}px)`;
+        tasksArea.style.webkitOverflowScrolling = 'touch';
+        tasksArea.style.display = 'block';
+        tasksArea.style.zIndex = '10';
+        
+        const taskElements = tasksArea.querySelectorAll('.task');
+        if (taskElements.length > 0) {
+          taskElements.forEach(task => {
+            task.style.display = 'flex';
+            task.style.visibility = 'visible';
+          });
+        } else {
+          console.log('Nenhuma tarefa renderizada. Verificando dados:', data[currentDay]);
+        }
+        
+        tasksArea.addEventListener('scroll', () => {
+          if (tasksArea.scrollTop > 0) {
+            container.classList.add('scrolled');
+          } else {
+            container.classList.remove('scrolled');
+          }
+        });
+      }
+    }
+
+    window.addEventListener('load', function() {
+      const tasksArea = document.querySelector('.tasks');
+      if (tasksArea) {
+        tasksArea.classList.remove('visible');
+        setTimeout(() => {
+          tasksArea.classList.add('visible');
+        }, 300);
+      }
+      
+      updateLayout();
+      render();
+    });
+
+    window.addEventListener('resize', function() {
+      updateLayout();
+    });
+
+    render();
+    save();
+
+    document.getElementById('progress').style.pointerEvents = 'none';
+
+    toggle.onchange = () => {
+      isDark = toggle.checked;
+      document.body.classList.toggle('dark-mode', isDark);
+      save();
+    }
+
+    resetBtn.onclick = e => {
+      e.stopPropagation(); // Impede propagação do evento
+      e.preventDefault(); // Impede comportamento padrão
+      console.log('Botão Limpar clicado');
+      if (resetBtn.classList.contains('delete')) return;
+      resetBtn.classList.add('delete');
+
+      const tasks = document.querySelectorAll('.task');
+      const tasksArea = document.querySelector('.tasks');
+      
+      tasks.forEach((task, index) => {
+        setTimeout(() => {
+          task.classList.add('cleaning');
+        }, index * 50);
+      });
+
+      setTimeout(() => {
+        listEl.innerHTML = '';
+        tasksArea.style.transition = 'none';
+        tasksArea.classList.remove('visible');
+        void tasksArea.offsetHeight;
+        tasksArea.style.transition = '';
+        data = JSON.parse(JSON.stringify(TASKS));
+        completedGroups = 0;
+        save();
+        render();
+        
+        resetBtn.classList.remove('delete');
+      }, (tasks.length * 50) + 300);
+    }
+
+    resetBtn.ontouchstart = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('Toque no botão Limpar');
+      resetBtn.onclick(e);
+    };
+
+    function setCircularProgress(container, value, stageSize = 100, totalStages = 4) {
+      if (!container) return;
+      
+      const circle = container.querySelector('.progress');
+      const text = container.querySelector('.value');
+      
+      if (!circle || !text) return;
+      
+      const r = circle.r.baseVal.value;
+      const C = 2 * Math.PI * r;
+      const max = stageSize * totalStages;
+      const v = Math.min(Math.max(value, 0), max);
+      
+      const level = Math.min(Math.floor(v / stageSize) + 1, totalStages);
+      container.setAttribute('data-level', level);
+      
+      const colors = {
+        1: 'var(--progress-level-1)',
+        2: 'var(--progress-level-2)',
+        3: 'var(--progress-level-3)',
+        4: 'var(--progress-level-4)'
+      };
+      
+      container.style.setProperty('--primary', colors[level]);
+      
+      let fillPercentage;
+      
+      if (level < totalStages) {
+        fillPercentage = (v % stageSize) / stageSize;
+        if (fillPercentage === 0 && v > 0) fillPercentage = 1.0;
+      } else {
+        fillPercentage = 1.0;
+      }
+      
+      circle.style.strokeDasharray = `${(fillPercentage * C).toFixed(2)} ${C.toFixed(2)}`;
+      text.textContent = `${Math.round(v)}xp`;
+      
+      if (level === 4) {
+        text.style.color = colors[4];
+      } else {
+        text.style.color = 'var(--text)';
+      }
+      
+      const nameElement = document.querySelector('.aurora-word');
+      if (nameElement) {
+        nameElement.classList.remove('level-4', 'max-xp');
+        nameElement.style.transform = 'scale(1)';
+        
+        if (v >= max) {
+          nameElement.classList.add('max-xp');
+          nameElement.style.transform = 'scale(1.05)';
+        }
+      }
+      
+      container.classList.remove('max-xp', 'almost-max');
+      
+      if (v >= max) {
+        container.classList.add('max-xp');
+        
+        if (Math.round(v) == max && window.confetti) {
+          const confettiSettings = { 
+            particleCount: 150,
+            spread: 80,
+            origin: { y: 0.6 },
+            colors: ['#FFD700', '#FFA500', '#FF4500', '#FF00FF']
+          };
+          window.confetti(confettiSettings);
+        }
+      } else if (v >= 350 && v < max) {
+        container.classList.add('almost-max');
+      }
+    }
+
+    function toggleTasksList() {
+      const tasksArea = document.querySelector('.tasks');
+      if (tasksArea) {
+        tasksArea.classList.toggle('visible');
+      }
+    }
+
+    const insightsContainer = document.querySelector('.insights');
+    if (insightsContainer) {
+      insightsContainer.style.cursor = 'pointer';
+      insightsContainer.addEventListener('click', toggleTasksList);
+    }
+
+    const themeToggleExercise = document.getElementById('theme-toggle-exercise');
+    if (themeToggleExercise) {
+      themeToggleExercise.onchange = () => {
+        isDark = themeToggleExercise.checked;
+        document.body.classList.toggle('dark-mode', isDark);
+        save();
+      };
+    }
+  </script>
+
+  <!-- Script do Cloudflare -->
+  <script>
+    (function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93a3d13baaba1d72',t:'MTc0NjMxNzg2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();
+  </script>
+</body>
+</html>
